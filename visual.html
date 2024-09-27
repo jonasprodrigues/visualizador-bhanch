@@ -57,10 +57,25 @@
             </tr>
         </table>
 
-        
+<!----------------------------------------------------------------------------------->        
+                <!-- Campo para inserir o nome do repositório -->
+        <input type="text" id="repoName" placeholder="Digite usuário/repositorio no GitHub">
+        <button onclick="getBranches()">Listar Branches</button>
+        <button onclick="getAllCommits()">Listar Commits de Todos os Branches</button>
+
+        <h2>Branches do Repositório:</h2>
+        <ul id="branchesList"></ul>
+
+        <h2>Commits de Todos os Branches:</h2>
+        <div id="commitsList"></div>
+<!----------------------------------------------------------------------------------->        
+
     </main>
 
     <script>
+
+
+/********************** FUNCAO DE ESCONDER COLUNAS ****************/
         function toggleColumns() {
             // Selecionar todas as linhas da tabela
             const rows = document.querySelectorAll("#tabela tr");
@@ -76,6 +91,108 @@
                     }
                 }
             });
+        }
+
+/********************************************************************************************/
+        // Função para buscar as branches do repositório no GitHub
+        
+        async function getBranches() {
+            const repo = document.getElementById('repoName').value.trim();
+            const branchesList = document.getElementById('branchesList');
+            branchesList.innerHTML = ''; // Limpar a lista antes de adicionar novos elementos
+
+            if (!repo) {
+                alert("Por favor, insira o nome do repositório no formato 'usuário/repositorio'");
+                return;
+            }
+
+            const url = `https://api.github.com/repos/${repo}/branches`;
+            console.log(`Buscando branches do repositório: ${repo}`);
+
+            try {
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Repositório não encontrado. Verifique o nome e tente novamente.');
+                    } else {
+                        throw new Error(`Erro ao buscar branches: ${response.status}`);
+                    }
+                }
+
+                const data = await response.json();
+                console.log('Branches recebidas:', data);
+
+                data.forEach(branch => {
+                    const li = document.createElement('li');
+                    li.textContent = branch.name;
+                    branchesList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Erro ao buscar branches:', error);
+                alert(error.message);
+            }
+        }
+
+        // Função para buscar os commits de todos os branches do repositório no GitHub
+        async function getAllCommits() {
+            const repo = document.getElementById('repoName').value.trim();
+            const commitsList = document.getElementById('commitsList');
+            commitsList.innerHTML = ''; // Limpar a lista antes de adicionar novos elementos
+
+            if (!repo) {
+                alert("Por favor, insira o nome do repositório no formato 'usuário/repositorio'");
+                return;
+            }
+
+            const branchesUrl = `https://api.github.com/repos/${repo}/branches`;
+            console.log(`Buscando branches do repositório para listar commits: ${repo}`);
+
+            try {
+                const branchesResponse = await fetch(branchesUrl);
+                if (!branchesResponse.ok) {
+                    if (branchesResponse.status === 404) {
+                        throw new Error('Repositório não encontrado. Verifique o nome e tente novamente.');
+                    } else {
+                        throw new Error(`Erro ao buscar branches: ${branchesResponse.status}`);
+                    }
+                }
+
+                const branchesData = await branchesResponse.json();
+                console.log('Branches recebidas:', branchesData);
+
+                // Para cada branch, buscar os commits
+                for (const branch of branchesData) {
+                    const commitsUrl = `https://api.github.com/repos/${repo}/commits?sha=${branch.name}`;
+                    const commitsResponse = await fetch(commitsUrl);
+
+                    if (!commitsResponse.ok) {
+                        console.error(`Erro ao buscar commits da branch ${branch.name}: ${commitsResponse.status}`);
+                        continue; // Pular para a próxima branch em caso de erro
+                    }
+
+                    const commitsData = await commitsResponse.json();
+                    console.log(`Commits da branch ${branch.name} recebidos:`, commitsData);
+
+                    // Exibir os commits da branch
+                    const branchDiv = document.createElement('div');
+                    branchDiv.innerHTML = `<h3>Commits da Branch: ${branch.name}</h3>`;
+                    commitsList.appendChild(branchDiv);
+
+                    commitsData.forEach(commit => {
+                        const li = document.createElement('div');
+                        li.innerHTML = `
+                            <strong>Autor:</strong> ${commit.commit.author.name} <br>
+                            <strong>Mensagem:</strong> ${commit.commit.message} <br>
+                            <strong>Data:</strong> ${new Date(commit.commit.author.date).toLocaleString()} <br><br>
+                        `;
+                        branchDiv.appendChild(li);
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao buscar commits:', error);
+                alert(error.message);
+            }
         }
     </script>
 </body>
