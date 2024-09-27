@@ -10,7 +10,9 @@
     <main>
         <h1>Tabela 5x5</h1>
 
-        <table>
+        <button onclick="toggleColumns()">Esconder/Mostrar Colunas 2-7</button>
+
+        <table id="tabela">
             <tr>
                 <th>Coluna 1</th>
                 <th>Coluna 2</th>
@@ -54,6 +56,27 @@
                 <td>Linha 5, Coluna 5</td>
             </tr>
         </table>
+
+        
     </main>
+
+    <script>
+        function toggleColumns() {
+            // Selecionar todas as linhas da tabela
+            const rows = document.querySelectorAll("#tabela tr");
+            
+            // Iterar sobre as linhas e esconder/mostrar as colunas 2 a 5
+            rows.forEach(row => {
+                for (let i = 1; i < 5; i++) { // i começa em 1 porque é zero-indexado
+                    let cell = row.cells[i];
+                    if (cell.style.display === "none") {
+                        cell.style.display = ""; // Mostrar se estiver escondido
+                    } else {
+                        cell.style.display = "none"; // Esconder se estiver visível
+                    }
+                }
+            });
+        }
+    </script>
 </body>
 </html>
