@@ -62,6 +62,9 @@
       font-size: 0.9em;
       color: #555;
     }
+    .second-table {
+      margin-top: 30px;
+    }
   </style>
 </head>
 <body>
@@ -70,6 +73,7 @@
     <input type="text" id="repoInput" placeholder="Digite o usuário/repositório (ex: facebook/react)" />
     <button onclick="fetchBranches()">Buscar Branches</button>
     <div id="commitTable"></div>
+    <div id="secondTable" class="second-table"></div>
   </div>
 
   <script>
@@ -79,7 +83,9 @@
     async function fetchBranches() {
       const repoInput = document.getElementById('repoInput').value;
       const commitTable = document.getElementById('commitTable');
+      const secondTable = document.getElementById('secondTable');
       commitTable.innerHTML = ''; // Limpa a tabela
+      secondTable.innerHTML = ''; // Limpa a segunda tabela
 
       if (!repoInput) {
         alert('Por favor, insira um repositório válido');
@@ -94,16 +100,14 @@
 
         const branches = await response.json();
 
-        // Verifica se o repositório tem branches
         if (branches.length === 0) {
           commitTable.innerHTML = '<p>Não há branches neste repositório.</p>';
           return;
         }
 
-        // Coloca o branch "main" na primeira coluna
         branches.sort((a, b) => (a.name === "main" ? -1 : b.name === "main" ? 1 : 0));
 
-        // Cria a tabela de commits
+        // Criar primeira tabela (commits)
         let table = `<table><thead><tr>`;
         branches.forEach(branch => {
           table += `<th>${branch.name}</th>`;
@@ -111,16 +115,18 @@
         });
         table += `</tr></thead><tbody><tr>`;
 
-        // Cria uma linha para cada branch
+        // Criar uma linha para cada branch
         for (let branch of branches) {
           table += `<td><ul id="commits-${branch.name}" class="commits"><li>Carregando commits...</li></ul></td>`;
-          fetchCommits(repoInput, branch.name); // Busca os commits e insere na célula correspondente
+          fetchCommits(repoInput, branch.name);
         }
-
         table += `</tr></tbody></table>`;
         commitTable.innerHTML = table;
 
-        // Loop para verificar novos commits a cada 60 segundos
+        // Criar segunda tabela (status "ok")
+        createSecondTable(branches);
+
+        // Verificar novos commits a cada 60 segundos
         setInterval(() => {
           branches.forEach(branch => {
             checkNewCommits(repoInput, branch.name);
@@ -130,6 +136,9 @@
       } catch (error) {
         alert('Erro ao buscar branches: ' + error.message);
       }
+
+      // Atualiza a segunda tabela a cada 5 segundos
+      setInterval(updateSecondTable, 5000);
     }
 
     // Função para buscar commits de uma branch
@@ -145,20 +154,17 @@
 
         const commits = await response.json();
 
-        // Verifica se há commits no branch
         if (commits.length === 0) {
           commitList.innerHTML = '<li>Sem commits neste branch.</li>';
           return;
         }
 
-        // Salva o SHA do último commit
         lastCommitSha[branch] = commits[0].sha;
 
-        // Exibe os commits na lista dentro da célula correspondente
         commits.forEach(commit => {
           const li = document.createElement('li');
           li.textContent = `${commit.commit.message} - ${commit.commit.author.name} (${new Date(commit.commit.author.date).toLocaleDateString()})`;
-          commitList.appendChild(li); // Insere cada commit na lista
+          commitList.appendChild(li); 
         });
 
       } catch (error) {
@@ -178,17 +184,14 @@
 
         const commits = await response.json();
 
-        // Verifica se há novos commits
         if (commits.length > 0 && commits[0].sha !== lastCommitSha[branch]) {
-          // Adiciona novos commits à lista
           const newCommits = commits.filter(commit => commit.sha !== lastCommitSha[branch]);
           newCommits.reverse().forEach(commit => {
             const li = document.createElement('li');
             li.textContent = `${commit.commit.message} - ${commit.commit.author.name} (${new Date(commit.commit.author.date).toLocaleDateString()})`;
-            commitList.prepend(li); // Adiciona o commit no topo da lista
+            commitList.prepend(li); 
           });
 
-          // Atualiza o SHA do último commit
           lastCommitSha[branch] = commits[0].sha;
         }
 
@@ -196,7 +199,40 @@
         console.error(`Erro ao verificar novos commits no branch ${branch}: ${error.message}`);
       }
     }
+
+    // Função para criar a segunda tabela
+    function createSecondTable(branches) {
+      let table = `<table><thead><tr>`;
+      branches.forEach(branch => {
+        table += `<th>${branch.name}</th>`;
+      });
+      table += `</tr></thead><tbody><tr>`;
+
+      branches.forEach(branch => {
+        table += `<td><ul id="status-${branch.name}"><li>Esperando...</li></ul></td>`;
+      });
+
+      table += `</tr></tbody></table>`;
+      document.getElementById('secondTable').innerHTML = table;
+    }
+
+    // Função para atualizar a segunda tabela com "ok" para cada commit
+    function updateSecondTable() {
+      const commitTable = document.querySelectorAll('.commits');
+
+      commitTable.forEach(commitList => {
+        const branch = commitList.id.replace('commits-', '');
+        const statusList = document.getElementById(`status-${branch}`);
+        statusList.innerHTML = ''; // Limpa a lista de status
+
+        const commitCount = commitList.children.length;
+        for (let i = 0; i < commitCount; i++) {
+          const li = document.createElement('li');
+          li.textContent = "ok";
+          statusList.appendChild(li); // Adiciona um "ok" para cada commit
+        }
+      });
+    }
   </script>
 </body>
 </html>
-
