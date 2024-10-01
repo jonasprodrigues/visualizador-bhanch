@@ -1,199 +1,202 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualizador de Branches e Commits do GitHub</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    h1 {
+      color: #333;
+    }
+    .container {
+      text-align: center;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    input {
+      padding: 10px;
+      width: 300px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      background-color: #28a745;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .commits {
+      font-size: 0.9em;
+      color: #555;
+    }
+  </style>
 </head>
 <body>
-    <main>
-        <h1>Tabela 5x5</h1>
+  <div class="container">
+    <h1>Visualizador de Branches e Commits do GitHub</h1>
+    <input type="text" id="repoInput" placeholder="Digite o usuário/repositório (ex: facebook/react)" />
+    <button onclick="fetchBranches()">Buscar Branches</button>
+    <div id="commitTable"></div>
+  </div>
 
-        <button onclick="toggleColumns()">Esconder/Mostrar Colunas 2-7</button>
+  <script>
+    let lastCommitSha = {}; // Armazena o SHA do último commit por branch
 
-        <table id="tabela">
-            <tr>
-                <th>Coluna 1</th>
-                <th>Coluna 2</th>
-                <th>Coluna 3</th>
-                <th>Coluna 4</th>
-                <th>Coluna 5</th>
-            </tr>
-            <tr>
-                <td>Linha 1, Coluna 1</td>
-                <td>Linha 1, Coluna 2</td>
-                <td>Linha 1, Coluna 3</td>
-                <td>Linha 1, Coluna 4</td>
-                <td>Linha 1, Coluna 5</td>
-            </tr>
-            <tr>
-                <td>Linha 2, Coluna 1</td>
-                <td>Linha 2, Coluna 2</td>
-                <td>Linha 2, Coluna 3</td>
-                <td>Linha 2, Coluna 4</td>
-                <td>Linha 2, Coluna 5</td>
-            </tr>
-            <tr>
-                <td>Linha 3, Coluna 1</td>
-                <td>Linha 3, Coluna 2</td>
-                <td>Linha 3, Coluna 3</td>
-                <td>Linha 3, Coluna 4</td>
-                <td>Linha 3, Coluna 5</td>
-            </tr>
-            <tr>
-                <td>Linha 4, Coluna 1</td>
-                <td>Linha 4, Coluna 2</td>
-                <td>Linha 4, Coluna 3</td>
-                <td>Linha 4, Coluna 4</td>
-                <td>Linha 4, Coluna 5</td>
-            </tr>
-            <tr>
-                <td>Linha 5, Coluna 1</td>
-                <td>Linha 5, Coluna 2</td>
-                <td>Linha 5, Coluna 3</td>
-                <td>Linha 5, Coluna 4</td>
-                <td>Linha 5, Coluna 5</td>
-            </tr>
-        </table>
+    // Função para buscar branches do repositório
+    async function fetchBranches() {
+      const repoInput = document.getElementById('repoInput').value;
+      const commitTable = document.getElementById('commitTable');
+      commitTable.innerHTML = ''; // Limpa a tabela
 
-<!----------------------------------------------------------------------------------->        
-                <!-- Campo para inserir o nome do repositório -->
-        <input type="text" id="repoName" placeholder="Digite usuário/repositorio no GitHub">
-        <button onclick="getBranches()">Listar Branches</button>
-        <button onclick="getAllCommits()">Listar Commits de Todos os Branches</button>
+      if (!repoInput) {
+        alert('Por favor, insira um repositório válido');
+        return;
+      }
 
-        <h2>Branches do Repositório:</h2>
-        <ul id="branchesList"></ul>
-
-        <h2>Commits de Todos os Branches:</h2>
-        <div id="commitsList"></div>
-<!----------------------------------------------------------------------------------->        
-
-    </main>
-
-    <script>
-
-
-/********************** FUNCAO DE ESCONDER COLUNAS ****************/
-        function toggleColumns() {
-            // Selecionar todas as linhas da tabela
-            const rows = document.querySelectorAll("#tabela tr");
-            
-            // Iterar sobre as linhas e esconder/mostrar as colunas 2 a 5
-            rows.forEach(row => {
-                for (let i = 1; i < 5; i++) { // i começa em 1 porque é zero-indexado
-                    let cell = row.cells[i];
-                    if (cell.style.display === "none") {
-                        cell.style.display = ""; // Mostrar se estiver escondido
-                    } else {
-                        cell.style.display = "none"; // Esconder se estiver visível
-                    }
-                }
-            });
+      try {
+        const response = await fetch(`https://api.github.com/repos/${repoInput}/branches`);
+        if (!response.ok) {
+          throw new Error('Repositório não encontrado ou API rate limit atingido');
         }
 
-/********************************************************************************************/
-        // Função para buscar as branches do repositório no GitHub
-        
-        async function getBranches() {
-            const repo = document.getElementById('repoName').value.trim();
-            const branchesList = document.getElementById('branchesList');
-            branchesList.innerHTML = ''; // Limpar a lista antes de adicionar novos elementos
+        const branches = await response.json();
 
-            if (!repo) {
-                alert("Por favor, insira o nome do repositório no formato 'usuário/repositorio'");
-                return;
-            }
-
-            const url = `https://api.github.com/repos/${repo}/branches`;
-            console.log(`Buscando branches do repositório: ${repo}`);
-
-            try {
-                const response = await fetch(url);
-
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error('Repositório não encontrado. Verifique o nome e tente novamente.');
-                    } else {
-                        throw new Error(`Erro ao buscar branches: ${response.status}`);
-                    }
-                }
-
-                const data = await response.json();
-                console.log('Branches recebidas:', data);
-
-                data.forEach(branch => {
-                    const li = document.createElement('li');
-                    li.textContent = branch.name;
-                    branchesList.appendChild(li);
-                });
-            } catch (error) {
-                console.error('Erro ao buscar branches:', error);
-                alert(error.message);
-            }
+        // Verifica se o repositório tem branches
+        if (branches.length === 0) {
+          commitTable.innerHTML = '<p>Não há branches neste repositório.</p>';
+          return;
         }
 
-        // Função para buscar os commits de todos os branches do repositório no GitHub
-        async function getAllCommits() {
-            const repo = document.getElementById('repoName').value.trim();
-            const commitsList = document.getElementById('commitsList');
-            commitsList.innerHTML = ''; // Limpar a lista antes de adicionar novos elementos
+        // Coloca o branch "main" na primeira coluna
+        branches.sort((a, b) => (a.name === "main" ? -1 : b.name === "main" ? 1 : 0));
 
-            if (!repo) {
-                alert("Por favor, insira o nome do repositório no formato 'usuário/repositorio'");
-                return;
-            }
+        // Cria a tabela de commits
+        let table = `<table><thead><tr>`;
+        branches.forEach(branch => {
+          table += `<th>${branch.name}</th>`;
+          lastCommitSha[branch.name] = ''; // Inicia o SHA do último commit como vazio
+        });
+        table += `</tr></thead><tbody><tr>`;
 
-            const branchesUrl = `https://api.github.com/repos/${repo}/branches`;
-            console.log(`Buscando branches do repositório para listar commits: ${repo}`);
-
-            try {
-                const branchesResponse = await fetch(branchesUrl);
-                if (!branchesResponse.ok) {
-                    if (branchesResponse.status === 404) {
-                        throw new Error('Repositório não encontrado. Verifique o nome e tente novamente.');
-                    } else {
-                        throw new Error(`Erro ao buscar branches: ${branchesResponse.status}`);
-                    }
-                }
-
-                const branchesData = await branchesResponse.json();
-                console.log('Branches recebidas:', branchesData);
-
-                // Para cada branch, buscar os commits
-                for (const branch of branchesData) {
-                    const commitsUrl = `https://api.github.com/repos/${repo}/commits?sha=${branch.name}`;
-                    const commitsResponse = await fetch(commitsUrl);
-
-                    if (!commitsResponse.ok) {
-                        console.error(`Erro ao buscar commits da branch ${branch.name}: ${commitsResponse.status}`);
-                        continue; // Pular para a próxima branch em caso de erro
-                    }
-
-                    const commitsData = await commitsResponse.json();
-                    console.log(`Commits da branch ${branch.name} recebidos:`, commitsData);
-
-                    // Exibir os commits da branch
-                    const branchDiv = document.createElement('div');
-                    branchDiv.innerHTML = `<h3>Commits da Branch: ${branch.name}</h3>`;
-                    commitsList.appendChild(branchDiv);
-
-                    commitsData.forEach(commit => {
-                        const li = document.createElement('div');
-                        li.innerHTML = `
-                            <strong>Autor:</strong> ${commit.commit.author.name} <br>
-                            <strong>Mensagem:</strong> ${commit.commit.message} <br>
-                            <strong>Data:</strong> ${new Date(commit.commit.author.date).toLocaleString()} <br><br>
-                        `;
-                        branchDiv.appendChild(li);
-                    });
-                }
-            } catch (error) {
-                console.error('Erro ao buscar commits:', error);
-                alert(error.message);
-            }
+        // Cria uma linha para cada branch
+        for (let branch of branches) {
+          table += `<td><ul id="commits-${branch.name}" class="commits"><li>Carregando commits...</li></ul></td>`;
+          fetchCommits(repoInput, branch.name); // Busca os commits e insere na célula correspondente
         }
-    </script>
+
+        table += `</tr></tbody></table>`;
+        commitTable.innerHTML = table;
+
+        // Loop para verificar novos commits a cada 60 segundos
+        setInterval(() => {
+          branches.forEach(branch => {
+            checkNewCommits(repoInput, branch.name);
+          });
+        }, 60000); // 60 segundos
+
+      } catch (error) {
+        alert('Erro ao buscar branches: ' + error.message);
+      }
+    }
+
+    // Função para buscar commits de uma branch
+    async function fetchCommits(repo, branch) {
+      const commitList = document.getElementById(`commits-${branch}`);
+      commitList.innerHTML = ''; // Limpa a lista de commits
+
+      try {
+        const response = await fetch(`https://api.github.com/repos/${repo}/commits?sha=${branch}`);
+        if (!response.ok) {
+          throw new Error('Erro ao buscar commits ou limite da API atingido');
+        }
+
+        const commits = await response.json();
+
+        // Verifica se há commits no branch
+        if (commits.length === 0) {
+          commitList.innerHTML = '<li>Sem commits neste branch.</li>';
+          return;
+        }
+
+        // Salva o SHA do último commit
+        lastCommitSha[branch] = commits[0].sha;
+
+        // Exibe os commits na lista dentro da célula correspondente
+        commits.forEach(commit => {
+          const li = document.createElement('li');
+          li.textContent = `${commit.commit.message} - ${commit.commit.author.name} (${new Date(commit.commit.author.date).toLocaleDateString()})`;
+          commitList.appendChild(li); // Insere cada commit na lista
+        });
+
+      } catch (error) {
+        commitList.innerHTML = `<li>Erro ao carregar commits: ${error.message}</li>`;
+      }
+    }
+
+    // Função para verificar novos commits em um branch
+    async function checkNewCommits(repo, branch) {
+      const commitList = document.getElementById(`commits-${branch}`);
+
+      try {
+        const response = await fetch(`https://api.github.com/repos/${repo}/commits?sha=${branch}`);
+        if (!response.ok) {
+          throw new Error('Erro ao buscar novos commits ou limite da API atingido');
+        }
+
+        const commits = await response.json();
+
+        // Verifica se há novos commits
+        if (commits.length > 0 && commits[0].sha !== lastCommitSha[branch]) {
+          // Adiciona novos commits à lista
+          const newCommits = commits.filter(commit => commit.sha !== lastCommitSha[branch]);
+          newCommits.reverse().forEach(commit => {
+            const li = document.createElement('li');
+            li.textContent = `${commit.commit.message} - ${commit.commit.author.name} (${new Date(commit.commit.author.date).toLocaleDateString()})`;
+            commitList.prepend(li); // Adiciona o commit no topo da lista
+          });
+
+          // Atualiza o SHA do último commit
+          lastCommitSha[branch] = commits[0].sha;
+        }
+
+      } catch (error) {
+        console.error(`Erro ao verificar novos commits no branch ${branch}: ${error.message}`);
+      }
+    }
+  </script>
 </body>
 </html>
+

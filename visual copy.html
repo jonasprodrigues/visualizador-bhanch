@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabela com Imagens Dinâmicas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 300px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <input type="text" id="imageInput" placeholder="Digite um, dois ou três">
+    <button onclick="updateImage()">Atualizar Imagem</button>
+
+    <table>
+        <tr>
+            <td id="cellA1"><img id="dynamicImage" src="" alt="Imagem dinâmica"></td>
+            <td>Coluna 2</td>
+            <td>Coluna 3</td>
+        </tr>
+        <tr>
+            <td>Linha 2, Coluna 1</td>
+            <td>Coluna 2</td>
+            <td>Coluna 3</td>
+        </tr>
+        <tr>
+            <td>Linha 3, Coluna 1</td>
+            <td>Coluna 2</td>
+            <td>Coluna 3</td>
+        </tr>
+    </table>
+
+    <script>
+        function updateImage() {
+            const inputValue = document.getElementById('imageInput').value.toLowerCase();
+            const imageElement = document.getElementById('dynamicImage');
+
+            switch(inputValue) {
+                case '1':
+                    imageElement.src = 'https://via.placeholder.com/150/FF0000/FFFFFF?text=Um';
+                    break;
+                case '2':
+                    imageElement.src = 'https://via.placeholder.com/150/00FF00/FFFFFF?text=Dois';
+                    break;
+                case '3':
+                    imageElement.src = 'https://via.placeholder.com/150/0000FF/FFFFFF?text=Três';
+                    break;
+                default:
+                    imageElement.src = '';
+                    alert('Digite um, dois ou três');
+            }
+        }
+    </script>
+
+</body>
+</html>
